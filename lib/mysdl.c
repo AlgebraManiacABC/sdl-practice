@@ -25,10 +25,12 @@ int mySDL_Close(int level, ...)
     va_start(vars,level);
     switch(level)
     {
-        case LEVEL_WIN:
-            SDL_DestroyWindow(va_arg(vars,SDL_Window*));
+        case LEVEL_TEX:
+            SDL_DestroyTexture(va_arg(vars,SDL_Texture*));
         case LEVEL_REND:
             SDL_DestroyRenderer(va_arg(vars,SDL_Renderer*));
+        case LEVEL_WIN:
+            SDL_DestroyWindow(va_arg(vars,SDL_Window*));
         case LEVEL_INIT:
             SDL_Quit();
             break;

@@ -8,6 +8,7 @@ int main(int argc, char ** argv)
     {
         return EXIT_FAILURE;
     }
+    SDL_SetRenderDrawBlendMode(r,SDL_BLENDMODE_BLEND);
 
     play_Game(r);
     mySDL_Close(LEVEL_REND,r,w);

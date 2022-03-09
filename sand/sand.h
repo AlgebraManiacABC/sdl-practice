@@ -1,9 +1,11 @@
 #include "../lib/mysdl.h"
+#include <math.h>
 
 #define BOX_WIDTH 150
 #define BOX_HEIGHT 100
-#define WIN_WIDTH 5*BOX_WIDTH
-#define WIN_HEIGHT 5*BOX_HEIGHT
+#define GRAIN_SIZE 5
+#define WIN_WIDTH GRAIN_SIZE*BOX_WIDTH
+#define WIN_HEIGHT GRAIN_SIZE*BOX_HEIGHT
 
 #define FALL_SPEED 10
 #define EMPTY 0
@@ -32,7 +34,7 @@ typedef struct
 
 typedef __BOX * sandbox;
 
-void draw_sandbox(sandbox box, SDL_Renderer * r);
+void draw_sandbox(SDL_Rect *background, sandbox box, SDL_Renderer * r, int mouse_x, int mouse_y, int brush_size);
 
 int box_x(int x);
 
@@ -53,11 +55,11 @@ void play_Game(SDL_Renderer *);
  */
 sandbox create_sandbox(int w, int h);
 
-int add_sand(sandbox box, int x, int y, int material);
+int add_sand(sandbox box, int x, int y, int material, int brush_size);
 
 grain new_grain(int x, int y, int material);
 
-void remove_sand(sandbox box, int x, int y);
+void remove_sand(sandbox box, int x, int y, int brush_size);
 
 int apply_physics(sandbox box);
 

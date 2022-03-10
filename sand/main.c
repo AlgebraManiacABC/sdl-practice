@@ -2,6 +2,7 @@
 
 int main(int argc, char ** argv)
 {
+    srand((Uint64) main);
     SDL_Window * w;
     SDL_Renderer * r;
     if(mySDL_Init(SDL_INIT_EVERYTHING,&w,WIN_WIDTH,WIN_HEIGHT,0,&r))

@@ -19,6 +19,7 @@ typedef struct
     int y;
     int type;
     SDL_Rect draw;
+    bool settled;
 
 }   __PART;
 
@@ -61,12 +62,16 @@ grain new_grain(int x, int y, int material);
 
 void remove_sand(sandbox box, int x, int y, int brush_size);
 
-int apply_physics(sandbox box);
+void apply_physics(sandbox box);
 
-int apply_grain_gravity(sandbox box, grain s);
+void apply_grain_gravity(sandbox box, grain s);
+
+void swap_grains(sandbox box, int x_a, int y_a, int x_b, int y_b);
 
 int apply_water_physics(sandbox box, grain s);
 
-bool is_midair(sandbox box, grain s);
+bool in_midair(sandbox box, grain s);
+
+bool above_water(sandbox box, grain s);
 
 void free_sandbox(sandbox box);

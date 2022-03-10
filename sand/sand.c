@@ -74,6 +74,9 @@ void play_Game(SDL_Renderer * r)
 
     while(!close)
     {
+
+        apply_physics(box);
+
         while(SDL_PollEvent(&event))
         {
             switch(event.type)
@@ -198,7 +201,7 @@ grain new_grain(int x, int y, int material)
 
     grain p = malloc(sizeof(__PART));
     SDL_Rect rect = {win_x(x),win_y(y),5,5};
-    __PART part = {x,y,material,rect};
+    __PART part = {x,y,material,rect,false};
     *p = part;
     return p;
 }
@@ -221,6 +224,192 @@ void remove_sand(sandbox box, int x, int y, int brush_size)
             }
         }
     }
+}
+
+void apply_physics(sandbox box)
+{
+    int dir = 0;
+    for(int i=box->h-1; i>=0; i--)
+    {
+        for(int j=0; j<box->w; j++)
+        {
+            if(!box->sand[i][j])
+                continue;
+            switch(box->sand[i][j]->type)
+            {
+                case WATER:
+                    dir = apply_water_physics(box,box->sand[i][j]);
+                    if(dir)
+                    {
+                        break;
+                    }
+                case SAND:
+                    apply_grain_gravity(box,box->sand[i][j]);
+                case WOOD:
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void apply_grain_gravity(sandbox box, grain g)
+{
+    if(g->y == BOX_HEIGHT-1)
+        return;
+
+    if(!in_midair(box,g) && g->settled)
+        return;
+    
+    grain dl;
+    if(g->x-1 < 0)
+        dl = NULL;
+    else dl = box->sand[(g->y)+1][g->x-1];
+
+    grain dd = box->sand[(g->y)+1][g->x];
+
+    grain dr;
+    if(g->x+1 == BOX_WIDTH)
+        dr = NULL;
+    else dr = box->sand[(g->y)+1][g->x+1];
+    
+    if(dl && dd && dr)
+    {
+        if(dl->type != WATER && dd->type != WATER && dr->type != WATER)
+            return;
+    }
+
+    int dir = 0;
+    int settle_timer = 3;
+    while(dir>=0 && settle_timer)
+    {
+        dir = rand()%6;
+        switch(dir)
+        {
+            case 0:
+            case 1:
+            case 2:
+            case 3: //  Move down
+                if(dd && dd->type != WATER)
+                {
+                    settle_timer--;
+                    break;
+                }
+                swap_grains(box,(g->x),(g->y),(g->x),(g->y)+1);
+                dir = -1;
+                settle_timer = 3;
+                break;
+            case 4: //  Move down-left
+                if(g->x == 0 || (dl && dl->type != WATER))
+                {
+                    settle_timer--;
+                    break;
+                }
+                swap_grains(box,(g->x),(g->y),(g->x)-1,(g->y)+1);
+                dir = -1;
+                settle_timer = 3;
+                break;
+            case 5: //  Move down-right
+                if(g->x == BOX_WIDTH-1 || (dr && dr->type != WATER))
+                {
+                    settle_timer--;
+                    break;
+                }
+                swap_grains(box,(g->x),(g->y),(g->x)+1,(g->y)+1);
+                dir = -1;
+                settle_timer = 3;
+                break;
+        }
+    }
+    if(!settle_timer && !above_water(box,g))
+        g->settled = true;
+}
+
+void swap_grains(sandbox box, int x_a, int y_a, int x_b, int y_b)
+{
+    grain a = box->sand[y_a][x_a];
+    grain b = box->sand[y_b][x_b];
+
+    if(!a && !b)
+        return;
+
+    int temp;
+    if(a && b)
+    {
+        temp = (*a).type;
+        (*a).type = (*b).type;
+        (*b).type = temp;
+    }
+    else if(a)
+    {
+        b = new_grain(x_b,y_b,a->type);
+        free(a);
+        box->sand[y_a][x_a] = NULL;
+        box->sand[y_b][x_b] = b;
+    }
+    else // b
+    {
+        a = new_grain(x_a,y_a,b->type);
+        free(b);
+        box->sand[y_b][x_b] = NULL;
+        box->sand[y_a][x_a] = a;
+    }
+
+}
+
+int apply_water_physics(sandbox box, grain g)
+{
+    if(in_midair(box,g))
+        return 0;
+
+    int dir = rand()%11;
+    switch(dir)
+    {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4: //  Left
+            if(g->x == 0 || box->sand[g->y][g->x-1])
+                return 0;
+            swap_grains(box,g->x,g->y,g->x-1,g->y);
+            return -1;
+        case 5: //  Stay
+            return 0;
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10: //  Right
+            if(g->x+1 == BOX_WIDTH || box->sand[g->y][g->x+1])
+                return 0;
+            swap_grains(box,g->x,g->y,g->x+1,g->y);
+            return 1;
+    }
+    return 0;
+}
+
+bool in_midair(sandbox box, grain g)
+{
+    if(g->y+1 == BOX_HEIGHT || box->sand[g->y+1][g->x])
+        return false;
+    return true;
+}
+
+bool above_water(sandbox box, grain g)
+{
+    if(g->y+1 == BOX_HEIGHT)
+        return false;
+
+    if(g->x > 0 && box->sand[g->y+1][g->x-1] && box->sand[g->y+1][g->x-1]->type == WATER)
+        return true;
+    else if(g->x+1 < BOX_WIDTH && box->sand[g->y+1][g->x+1] && box->sand[g->y+1][g->x+1]->type == WATER)
+        return true;
+    else if(box->sand[g->y+1][g->x] && box->sand[g->y+1][g->x]->type == WATER)
+        return true;    
+
+    return false;
 }
 
 void free_sandbox(sandbox sb)

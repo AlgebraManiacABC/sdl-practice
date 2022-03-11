@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Werror -lm -std=c11 -lmingw32 -lSDL2main -lSDL2 -llibSDL2_image
+CFLAGS=-Wall -Werror -lm -std=c11 -lmingw32 -lSDL2main -lSDL2 -llibSDL2_image -Wl,--subsystem,windows
 LDIR=../lib/
 ODIR=./build/
 LIBS=${wildcard ${LDIR}*.h}
@@ -11,11 +11,12 @@ SRC+=${wildcard ./*.c}
 OBJS=${patsubst ./%, ${ODIR}%, ${SRC:%.c=%.o}}
 
 sand: ${OBJS}
-	${CC} $^ -o $@ ${CFLAGS}
+	${CC} $^ -o $@ ${CFLAGS} icon.res
 
 ${ODIR}%.o: ${SDIR}%.c ${LIBS}
 	${CC} -c ${filter-out ../lib/,${filter-out %.h,$^}} -o $@ ${CFLAGS}
 
 clean:
 	rm ${ODIR}*.o
-	rm sand.exe
+	rm ${LDIR}*.o
+	rm ./*.exe

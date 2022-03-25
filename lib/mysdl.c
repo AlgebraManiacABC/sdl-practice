@@ -1,7 +1,7 @@
 #include "mysdl.h"
 
 int mySDL_Init(Uint32 init_flags, SDL_Window ** w, int win_w, int win_h,
-    Uint32 win_flags, SDL_Renderer ** r)
+    Uint32 win_flags, char * win_name, SDL_Renderer ** r)
 {
     if(SDL_Init(init_flags))
     {
@@ -15,6 +15,7 @@ int mySDL_Init(Uint32 init_flags, SDL_Window ** w, int win_w, int win_h,
         SDL_Quit();
         return EXIT_FAILURE;
     }
+    SDL_SetWindowTitle(*w,win_name);
 
     return EXIT_SUCCESS;
 }

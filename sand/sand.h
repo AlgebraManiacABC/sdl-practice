@@ -1,11 +1,11 @@
 #include "../lib/mysdl.h"
 #include <math.h>
 
-#define BOX_WIDTH 150
-#define BOX_HEIGHT 100
-#define GRAIN_SIZE 5
-#define WIN_WIDTH GRAIN_SIZE*BOX_WIDTH
-#define WIN_HEIGHT GRAIN_SIZE*BOX_HEIGHT
+#define DEFAULT_BOX_WIDTH 150
+#define DEFAULT_BOX_HEIGHT 100
+#define DEFAULT_GRAIN_SIZE 5
+#define DEFAULT_WIN_WIDTH DEFAULT_GRAIN_SIZE*DEFAULT_BOX_WIDTH
+#define DEFAULT_WIN_HEIGHT DEFAULT_GRAIN_SIZE*DEFAULT_BOX_HEIGHT
 
 #define FALL_SPEED 10
 #define EMPTY 0
@@ -30,6 +30,7 @@ typedef struct
     int w;
     int h;
     grain ** sand;
+    int grain_size;
 
 }   __BOX;
 
@@ -37,13 +38,13 @@ typedef __BOX * sandbox;
 
 void draw_sandbox(SDL_Rect *background, sandbox box, SDL_Renderer * r, int mouse_x, int mouse_y, int brush_size);
 
-int box_x(int x);
+int box_x(int x, sandbox box);
 
-int box_y(int y);
+int box_y(int y, sandbox box);
 
-int win_x(int x);
+int win_x(int x, sandbox box);
 
-int win_y(int y);
+int win_y(int y, sandbox box);
 
 void play_Game(SDL_Renderer *);
 
@@ -54,11 +55,11 @@ void play_Game(SDL_Renderer *);
  * @param h sandbox height in particles
  * @return if success return new sandbox object (pointer). NULL if failure
  */
-sandbox create_sandbox(int w, int h);
+sandbox create_sandbox(int w, int h, int grain_size);
 
 int add_sand(sandbox box, int x, int y, int material, int brush_size);
 
-grain new_grain(int x, int y, int material);
+grain new_grain(int x, int y, int material, sandbox box);
 
 void remove_sand(sandbox box, int x, int y, int brush_size);
 

@@ -3,10 +3,10 @@
 void draw_sandbox(SDL_Rect *background, sandbox box, SDL_Renderer * r, int mx, int my, int brush_size)
 {
     static SDL_Rect brush;
-    brush.h = brush_size*GRAIN_SIZE;
-    brush.w = brush_size*GRAIN_SIZE;
-    brush.x = win_x(box_x(mx) - brush_size/2);
-    brush.y = win_y(box_y(my) - brush_size/2);
+    brush.h = brush_size*(box->grain_size);
+    brush.w = brush_size*(box->grain_size);
+    brush.x = win_x(box_x(mx,box) - brush_size/2, box);
+    brush.y = win_y(box_y(my,box) - brush_size/2, box);
 
     int c[][4] =   //  [Material][RGBA]
     {
@@ -38,32 +38,32 @@ void draw_sandbox(SDL_Rect *background, sandbox box, SDL_Renderer * r, int mx, i
     SDL_RenderPresent(r);
 }
 
-int box_x(int x)
+int box_x(int x, sandbox box)
 {
-    return x/GRAIN_SIZE;
+    return x/(box->grain_size);
 }
 
-int box_y(int y)
+int box_y(int y, sandbox box)
 {
-    return y/GRAIN_SIZE;
+    return y/(box->grain_size);
 }
 
-int win_x(int x)
+int win_x(int x, sandbox box)
 {
-    return x*GRAIN_SIZE;
+    return x*(box->grain_size);
 }
 
-int win_y(int y)
+int win_y(int y, sandbox box)
 {
-    return y*GRAIN_SIZE;
+    return y*(box->grain_size);
 }
 
 void play_Game(SDL_Renderer * r)
 {
     bool close = false;
     SDL_Event event;
-    sandbox box = create_sandbox(BOX_WIDTH,BOX_HEIGHT);
-    SDL_Rect background = {0,0,WIN_WIDTH,WIN_HEIGHT};
+    sandbox box = create_sandbox(DEFAULT_BOX_WIDTH,DEFAULT_BOX_HEIGHT,DEFAULT_GRAIN_SIZE);
+    SDL_Rect background = {0,0,DEFAULT_WIN_WIDTH,DEFAULT_WIN_HEIGHT};
     int material = EMPTY;
     int brush_size = 1;
     if(!box)
@@ -121,9 +121,9 @@ void play_Game(SDL_Renderer * r)
         Uint32 buttons = SDL_GetMouseState(&mouse_x,&mouse_y);
 
         if(buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
-            add_sand(box,box_x(mouse_x),box_y(mouse_y),material,brush_size);
+            add_sand(box,box_x(mouse_x,box),box_y(mouse_y,box),material,brush_size);
         if(buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
-            remove_sand(box,box_x(mouse_x),box_y(mouse_y),brush_size);
+            remove_sand(box,box_x(mouse_x,box),box_y(mouse_y,box),brush_size);
 
         draw_sandbox(&background,box,r,mouse_x,mouse_y,brush_size);
 
@@ -132,7 +132,7 @@ void play_Game(SDL_Renderer * r)
     free_sandbox(box);
 }
 
-sandbox create_sandbox(int w, int h)
+sandbox create_sandbox(int w, int h, int grain_size)
 {
     sandbox sb = malloc(sizeof(__BOX));
     if(!sb)
@@ -140,6 +140,7 @@ sandbox create_sandbox(int w, int h)
 
     sb->h = h;
     sb->w = w;
+    sb->grain_size = grain_size;
     sb->sand = malloc(sizeof(grain*)*h);
     if(!sb->sand)
     {
@@ -172,17 +173,17 @@ int add_sand(sandbox box, int x, int y, int material, int brush_size)
     {
         for(int w=x-low_half; w<x+up_half; w++)
         {
-            if(h < 0 || h > BOX_HEIGHT-1 || w < 0 || w > BOX_WIDTH-1)
+            if(h < 0 || h > DEFAULT_BOX_HEIGHT-1 || w < 0 || w > DEFAULT_BOX_WIDTH-1)
                 continue;
             if(box->sand[h][w])
                 continue;
-            box->sand[h][w] = new_grain(w,h,material);
+            box->sand[h][w] = new_grain(w,h,material,box);
         }
     }
     return EXIT_SUCCESS;
 }
 
-grain new_grain(int x, int y, int material)
+grain new_grain(int x, int y, int material, sandbox box)
 {
     switch(material)
     {
@@ -194,13 +195,13 @@ grain new_grain(int x, int y, int material)
             return NULL;
             break;
     }
-    if(x < 0 || x > BOX_WIDTH)
+    if(x < 0 || x > DEFAULT_BOX_WIDTH)
         return NULL;
-    if(y < 0 || y > BOX_HEIGHT)
+    if(y < 0 || y > DEFAULT_BOX_HEIGHT)
         return NULL;
 
     grain p = malloc(sizeof(__PART));
-    SDL_Rect rect = {win_x(x),win_y(y),5,5};
+    SDL_Rect rect = {win_x(x,box),win_y(y,box),5,5};
     __PART part = {x,y,material,rect,false};
     *p = part;
     return p;
@@ -215,7 +216,7 @@ void remove_sand(sandbox box, int x, int y, int brush_size)
     {
         for(int w=x-low_half; w<x+up_half; w++)
         {
-            if(h < 0 || h > BOX_HEIGHT-1 || w < 0 || w > BOX_WIDTH-1)
+            if(h < 0 || h > DEFAULT_BOX_HEIGHT-1 || w < 0 || w > DEFAULT_BOX_WIDTH-1)
                 continue;
             if(box->sand[h][w])
             {
@@ -256,7 +257,7 @@ void apply_physics(sandbox box)
 
 void apply_grain_gravity(sandbox box, grain g)
 {
-    if(g->y == BOX_HEIGHT-1)
+    if(g->y == DEFAULT_BOX_HEIGHT-1)
         return;
 
     if(!in_midair(box,g) && g->settled)
@@ -270,7 +271,7 @@ void apply_grain_gravity(sandbox box, grain g)
     grain dd = box->sand[(g->y)+1][g->x];
 
     grain dr;
-    if(g->x+1 == BOX_WIDTH)
+    if(g->x+1 == DEFAULT_BOX_WIDTH)
         dr = NULL;
     else dr = box->sand[(g->y)+1][g->x+1];
     
@@ -311,7 +312,7 @@ void apply_grain_gravity(sandbox box, grain g)
                 settle_timer = 3;
                 break;
             case 5: //  Move down-right
-                if(g->x == BOX_WIDTH-1 || (dr && dr->type != WATER))
+                if(g->x == DEFAULT_BOX_WIDTH-1 || (dr && dr->type != WATER))
                 {
                     settle_timer--;
                     break;
@@ -343,14 +344,14 @@ void swap_grains(sandbox box, int x_a, int y_a, int x_b, int y_b)
     }
     else if(a)
     {
-        b = new_grain(x_b,y_b,a->type);
+        b = new_grain(x_b,y_b,a->type,box);
         free(a);
         box->sand[y_a][x_a] = NULL;
         box->sand[y_b][x_b] = b;
     }
     else // b
     {
-        a = new_grain(x_a,y_a,b->type);
+        a = new_grain(x_a,y_a,b->type,box);
         free(b);
         box->sand[y_b][x_b] = NULL;
         box->sand[y_a][x_a] = a;
@@ -382,7 +383,7 @@ int apply_water_physics(sandbox box, grain g)
         case 8:
         case 9:
         case 10: //  Right
-            if(g->x+1 == BOX_WIDTH || box->sand[g->y][g->x+1])
+            if(g->x+1 == DEFAULT_BOX_WIDTH || box->sand[g->y][g->x+1])
                 return 0;
             swap_grains(box,g->x,g->y,g->x+1,g->y);
             return 1;
@@ -392,19 +393,19 @@ int apply_water_physics(sandbox box, grain g)
 
 bool in_midair(sandbox box, grain g)
 {
-    if(g->y+1 == BOX_HEIGHT || box->sand[g->y+1][g->x])
+    if(g->y+1 == DEFAULT_BOX_HEIGHT || box->sand[g->y+1][g->x])
         return false;
     return true;
 }
 
 bool above_water(sandbox box, grain g)
 {
-    if(g->y+1 == BOX_HEIGHT)
+    if(g->y+1 == DEFAULT_BOX_HEIGHT)
         return false;
 
     if(g->x > 0 && box->sand[g->y+1][g->x-1] && box->sand[g->y+1][g->x-1]->type == WATER)
         return true;
-    else if(g->x+1 < BOX_WIDTH && box->sand[g->y+1][g->x+1] && box->sand[g->y+1][g->x+1]->type == WATER)
+    else if(g->x+1 < DEFAULT_BOX_WIDTH && box->sand[g->y+1][g->x+1] && box->sand[g->y+1][g->x+1]->type == WATER)
         return true;
     else if(box->sand[g->y+1][g->x] && box->sand[g->y+1][g->x]->type == WATER)
         return true;    
